@@ -65,20 +65,32 @@ module "lf_curated_db_permissions" {
 
 module "raw_crawler" {
   source        = "../../modules/glue_crawler"
-  crawler_name  = "raw-zone-crawler-dev"
+  crawler_name  = "raw-zone-crawler-prod"
   iam_role_arn = module.glue_iam.role_arn
   database_name = module.glue_raw_db.database_name
   s3_path       = "s3://${module.raw_bucket.bucket_name}/"
   table_prefix  = "raw_"
-  description   = "Crawler for raw zone data (dev)"
+  description   = "Crawler for raw zone data (prod)"
 }
 
 module "curated_crawler" {
   source        = "../../modules/glue_crawler"
-  crawler_name  = "curated-zone-crawler-dev"
+  crawler_name  = "curated-zone-crawler-prod"
   iam_role_arn = module.glue_iam.role_arn
   database_name = module.glue_curated_db.database_name
   s3_path       = "s3://${module.curated_bucket.bucket_name}/"
   table_prefix  = "curated_"
-  description   = "Crawler for curated zone data (dev)"
+  description   = "Crawler for curated zone data (prod)"
+}
+
+module "raw_to_curated_job" {
+  source            = "../../modules/glue_job"
+  job_name          = "raw-to-curated-prod"
+  iam_role_arn      = module.glue_iam.role_arn
+  script_location   = "s3://${module.raw_bucket.bucket_name}/scripts/raw_to_curated.py"
+  raw_database      = module.glue_raw_db.database_name
+  raw_table         = "raw_events"
+  curated_bucket    = module.curated_bucket.bucket_name
+  curated_prefix    = "events"
+  number_of_workers = 2
 }
