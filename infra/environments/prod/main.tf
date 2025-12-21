@@ -107,3 +107,25 @@ module "athena_workgroup" {
   description     = "Athena workgroup for analytics queries (prod)"
   output_location = "s3://${module.athena_results_bucket.bucket_name}/results/"
 }
+
+module "athena_analyst_role" {
+  source                = "../../modules/iam_athena_analyst"
+  role_name             = "athena-analyst-prod"
+  trusted_principal_arn = "arn:aws:iam::195343369122:root"
+
+  athena_results_s3_arns = [
+    "arn:aws:s3:::${module.athena_results_bucket.bucket_name}",
+    "arn:aws:s3:::${module.athena_results_bucket.bucket_name}/*"
+  ]
+}
+
+resource "aws_lakeformation_permissions" "analyst_curated_events_read" {
+  principal   = module.athena_analyst_role.role_arn
+
+  permissions = ["DESCRIBE", "SELECT"]
+
+  table {
+    database_name = module.glue_curated_db.database_name
+    name          = "curated_events"
+  }
+}
